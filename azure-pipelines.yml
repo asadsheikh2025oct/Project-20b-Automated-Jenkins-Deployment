@@ -1,0 +1,19 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- checkout: self
+- task: AzureResourceManagerTemplateDeployment@3
+  inputs:
+    deploymentScope: 'Resource Group'
+    azureResourceManagerConnection: 'Azure-Global-Connection'
+    subscriptionId: 'f2f1d6df-9422-48cb-abf1-0a4eb095ad4a'
+    action: 'Create Or Update Resource Group'
+    resourceGroupName: 'project20b'
+    templateLocation: 'Linked artifact'
+    csmFile: './main.bicep'
+    csmParametersFile: './main.bicepparam'
+    deploymentMode: 'Incremental'
