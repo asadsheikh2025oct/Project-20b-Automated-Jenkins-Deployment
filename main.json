@@ -1,207 +1,23 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
-  "metadata": {
-    "_generator": {
-      "name": "bicep",
-      "version": "0.41.2.15936",
-      "templateHash": "14916839789874082094"
-    }
-  },
   "parameters": {
-    "location": {
-      "type": "string"
-    },
     "vmName": {
-      "type": "string"
-    },
-    "adminUsername": {
-      "type": "string"
+      "value": "JenkinsServer"
     },
     "scriptUrl": {
-      "type": "string"
+      "value": "https://raw.githubusercontent.com/asadsheikh2025oct/Project-20b-Automated-Jenkins-Deployment/refs/heads/main/install-jenkins.sh"
+    },
+    "adminUsername": {
+      "value": "azure-user"
     },
     "adminSshKey": {
-      "type": "securestring",
-      "metadata": {
-        "description": "The SSH Public Key used to authenticate with the VM."
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/f2f1d6df-9422-48cb-abf1-0a4eb095ad4a/resourceGroups/project20b/providers/Microsoft.KeyVault/vaults/kv20260407"
+        },
+        "secretName": "jenkins-azure"
       }
     }
-  },
-  "resources": [
-    {
-      "type": "Microsoft.Network/virtualNetworks",
-      "apiVersion": "2024-05-01",
-      "name": "[format('{0}-vnet', parameters('vmName'))]",
-      "location": "[parameters('location')]",
-      "properties": {
-        "addressSpace": {
-          "addressPrefixes": [
-            "10.0.0.0/16"
-          ]
-        },
-        "subnets": [
-          {
-            "name": "[format('{0}-subnet', parameters('vmName'))]",
-            "properties": {
-              "addressPrefix": "10.0.0.0/24"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "type": "Microsoft.Network/publicIPAddresses",
-      "apiVersion": "2023-11-01",
-      "name": "[format('{0}-publicIP', parameters('vmName'))]",
-      "location": "[parameters('location')]",
-      "sku": {
-        "name": "Standard"
-      },
-      "properties": {
-        "publicIPAllocationMethod": "Static"
-      }
-    },
-    {
-      "type": "Microsoft.Network/networkSecurityGroups",
-      "apiVersion": "2024-01-01",
-      "name": "[format('{0}-nsg', parameters('vmName'))]",
-      "location": "[parameters('location')]",
-      "properties": {
-        "securityRules": [
-          {
-            "name": "[format('Allow-{0}-8080', parameters('vmName'))]",
-            "properties": {
-              "access": "Allow",
-              "direction": "Inbound",
-              "priority": 1000,
-              "protocol": "Tcp",
-              "description": "[format('Allow inbound traffic into {0}', parameters('vmName'))]",
-              "destinationAddressPrefix": "*",
-              "destinationPortRange": "8080",
-              "sourcePortRange": "*",
-              "sourceAddressPrefix": "*"
-            }
-          },
-          {
-            "name": "AllowSSH",
-            "properties": {
-              "access": "Allow",
-              "direction": "Inbound",
-              "priority": 900,
-              "protocol": "Tcp",
-              "description": "Allow SSH access to port 22",
-              "destinationAddressPrefix": "*",
-              "destinationPortRange": "22",
-              "sourceAddressPrefix": "*",
-              "sourcePortRange": "*"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "type": "Microsoft.Network/networkInterfaces",
-      "apiVersion": "2023-11-01",
-      "name": "[format('{0}-nic', parameters('vmName'))]",
-      "location": "[parameters('location')]",
-      "properties": {
-        "networkSecurityGroup": {
-          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-nsg', parameters('vmName')))]"
-        },
-        "ipConfigurations": [
-          {
-            "name": "[format('{0}-ipconfig', parameters('vmName'))]",
-            "properties": {
-              "privateIPAllocationMethod": "Dynamic",
-              "publicIPAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIPAddresses', format('{0}-publicIP', parameters('vmName')))]"
-              },
-              "subnet": {
-                "id": "[reference(resourceId('Microsoft.Network/virtualNetworks', format('{0}-vnet', parameters('vmName'))), '2024-05-01').subnets[0].id]"
-              }
-            }
-          }
-        ]
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-nsg', parameters('vmName')))]",
-        "[resourceId('Microsoft.Network/publicIPAddresses', format('{0}-publicIP', parameters('vmName')))]",
-        "[resourceId('Microsoft.Network/virtualNetworks', format('{0}-vnet', parameters('vmName')))]"
-      ]
-    },
-    {
-      "type": "Microsoft.Compute/virtualMachines",
-      "apiVersion": "2023-09-01",
-      "name": "[parameters('vmName')]",
-      "location": "[parameters('location')]",
-      "properties": {
-        "hardwareProfile": {
-          "vmSize": "Standard_B1s"
-        },
-        "osProfile": {
-          "adminUsername": "[parameters('adminUsername')]",
-          "computerName": "[parameters('vmName')]",
-          "allowExtensionOperations": true,
-          "linuxConfiguration": {
-            "disablePasswordAuthentication": true,
-            "ssh": {
-              "publicKeys": [
-                {
-                  "path": "[format('/home/{0}/.ssh/authorized_keys', parameters('adminUsername'))]",
-                  "keyData": "[parameters('adminSshKey')]"
-                }
-              ]
-            }
-          }
-        },
-        "storageProfile": {
-          "imageReference": {
-            "offer": "0001-com-ubuntu-server-jammy",
-            "publisher": "Canonical",
-            "sku": "22_04-lts-gen2",
-            "version": "latest"
-          },
-          "osDisk": {
-            "name": "[format('{0}-osdisk', parameters('vmName'))]",
-            "createOption": "FromImage",
-            "managedDisk": {
-              "storageAccountType": "Standard_LRS"
-            }
-          }
-        },
-        "networkProfile": {
-          "networkInterfaces": [
-            {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', format('{0}-nic', parameters('vmName')))]"
-            }
-          ]
-        }
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/networkInterfaces', format('{0}-nic', parameters('vmName')))]"
-      ]
-    },
-    {
-      "type": "Microsoft.Compute/virtualMachines/extensions",
-      "apiVersion": "2023-07-01",
-      "name": "[format('{0}/{1}', parameters('vmName'), format('{0}-extension', parameters('vmName')))]",
-      "location": "[parameters('location')]",
-      "properties": {
-        "publisher": "Microsoft.Azure.Extensions",
-        "type": "CustomScript",
-        "typeHandlerVersion": "2.1",
-        "autoUpgradeMinorVersion": true,
-        "settings": {
-          "fileUris": [
-            "[parameters('scriptUrl')]"
-          ],
-          "commandToExecute": "bash install-jenkins.sh"
-        }
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.Compute/virtualMachines', parameters('vmName'))]"
-      ]
-    }
-  ]
+  }
 }

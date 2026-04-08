@@ -1,5 +1,5 @@
 // parameters
-param location string
+param location string = resourceGroup().location
 param vmName string 
 param adminUsername string  
 param scriptUrl string
