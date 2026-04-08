@@ -1,7 +1,7 @@
 // parameters
 param location string
-param vmName string = 
-param adminUsername string = 
+param vmName string 
+param adminUsername string  
 param scriptUrl string
 @description('The SSH Public Key used to authenticate with the VM.')
 @secure()
