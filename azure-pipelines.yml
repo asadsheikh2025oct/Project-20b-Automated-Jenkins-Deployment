@@ -13,6 +13,7 @@ steps:
     subscriptionId: 'f2f1d6df-9422-48cb-abf1-0a4eb095ad4a'
     action: 'Create Or Update Resource Group'
     resourceGroupName: 'project20b'
+    location: 'UK West'
     templateLocation: 'Linked artifact'
     csmFile: './main.bicep'
     csmParametersFile: './main.bicepparam'
